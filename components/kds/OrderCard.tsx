@@ -37,14 +37,9 @@ export function OrderCard({
   const { order, items } = kdsOrder;
   const isCompleted = items.length > 0 && items.every((i) => i.completed);
 
-  const doneCount = items.filter((i) => i.completed).length;
-  const total = items.length;
-  const pct = total > 0 ? (doneCount / total) * 100 : 0;
-  const allDone = doneCount === total && total > 0;
-
   useEffect(() => {
-    if (allDone) onComplete();
-  }, [allDone]);
+    if (isCompleted) onComplete();
+  }, [isCompleted]);
 
   return (
     <View
@@ -238,22 +233,10 @@ export function OrderCard({
 
       {/* Footer */}
       <View className="px-3 py-2">
-        <View className="flex-row items-center gap-2 mb-2">
-          <View className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-            <View
-              className="h-full bg-[#22c87a] rounded-full"
-              style={{ width: `${pct}%` }}
-            />
-          </View>
-          <Text className="text-slate-500 text-xs">
-            {doneCount}/{total}
-          </Text>
-        </View>
-
         {!isCompleted && (
           <TouchableOpacity
             onPress={onComplete}
-            className="rounded-lg py-2 items-center bg-[#22c87a]"
+            className="rounded-lg py-4 items-center bg-[#22c87a]"
             activeOpacity={0.8}
           >
             <Text className="text-xs font-semibold text-white">

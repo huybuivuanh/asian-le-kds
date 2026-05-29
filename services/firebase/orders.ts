@@ -9,7 +9,7 @@ import {
   where,
   type DocumentChangeType,
 } from "firebase/firestore";
-import { db } from "./config";
+import { firebase } from "./config";
 
 export type OrderChangeHandler = (
   order: DineInOrder | TakeOutOrder,
@@ -20,7 +20,7 @@ export function subscribeToActiveDineInOrders(
   onChange: OrderChangeHandler,
 ): () => void {
   const q = query(
-    collection(db, "dineInOrders"),
+    collection(firebase.db,"dineInOrders"),
     where("status", "==", OrderStatus.InProgress),
     orderBy("createdAt", "asc"),
   );
@@ -37,12 +37,12 @@ export function subscribeToActiveAllOrders(
   onChange: OrderChangeHandler,
 ): () => void {
   const dineInQuery = query(
-    collection(db, "dineInOrders"),
+    collection(firebase.db,"dineInOrders"),
     where("status", "==", OrderStatus.InProgress),
     orderBy("createdAt", "asc"),
   );
   const takeOutQuery = query(
-    collection(db, "takeOutOrders"),
+    collection(firebase.db,"takeOutOrders"),
     where("status", "==", OrderStatus.InProgress),
     orderBy("createdAt", "asc"),
   );
@@ -72,7 +72,7 @@ export async function updateOrderItems(
   orderItems: OrderItem[],
   collectionName: "dineInOrders" | "takeOutOrders" = "dineInOrders",
 ): Promise<void> {
-  await updateDoc(doc(db, collectionName, orderId), { orderItems });
+  await updateDoc(doc(firebase.db,collectionName, orderId), { orderItems });
 }
 
 export function collectionForOrder(

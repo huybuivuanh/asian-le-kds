@@ -34,9 +34,22 @@ if (Platform.OS === "web") {
   });
 }
 
-export const db = initializeFirestore(app, {
+const firestoreSettings = {
   localCache: memoryLocalCache({
     garbageCollector: memoryEagerGarbageCollector(),
   }),
-});
+};
+
+const productionDb = initializeFirestore(app, firestoreSettings);
+const demoDb = initializeFirestore(app, firestoreSettings, "demo");
+
+export const firebase = { db: productionDb };
+
+export function activateDemoDb() {
+  firebase.db = demoDb;
+}
+export function activateProductionDb() {
+  firebase.db = productionDb;
+}
+
 export { auth };

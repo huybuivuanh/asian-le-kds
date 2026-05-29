@@ -1,4 +1,4 @@
-import { db } from "@/services/firebase/config";
+import { firebase } from "@/services/firebase/config";
 import {
   AddExtra,
   ItemChange,
@@ -9,7 +9,7 @@ import {
 import { collection, doc } from "firebase/firestore";
 
 export const generateFirestoreId = () => {
-  return doc(collection(db, "dummy")).id;
+  return doc(collection(firebase.db,"dummy")).id;
 };
 
 /**

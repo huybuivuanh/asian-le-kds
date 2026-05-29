@@ -1,7 +1,8 @@
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User } from "firebase/auth";
 import { useEffect, useState } from "react";
 
-import { auth } from "./config";
+import { DEMO_EMAIL } from "@/config/demo";
+import { activateDemoDb, activateProductionDb, auth } from "./config";
 
 export function useFirebaseUser() {
   const [user, setUser] = useState<User | null>(auth.currentUser);
@@ -9,6 +10,11 @@ export function useFirebaseUser() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
+      if (u?.email === DEMO_EMAIL) {
+        activateDemoDb();
+      } else {
+        activateProductionDb();
+      }
       setUser(u);
       setIsLoading(false);
     });

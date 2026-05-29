@@ -188,12 +188,10 @@ export function useKDSOrders(
     const orderEntry = kdsOrders.find((o) => o.order.id === orderId);
     if (!orderEntry) return;
 
-    // Always persist to AsyncStorage regardless of current completion state,
-    // so checkbox-triggered completion (useEffect path) is also restored on restart.
     completedIds.current.add(orderId);
     saveIds();
 
-    if (isOrderCompleted(orderEntry)) return;
+    const alreadyCompleted = isOrderCompleted(orderEntry);
 
     const newRawItems = orderEntry.order.orderItems.map((raw) => ({
       ...raw,
@@ -201,15 +199,17 @@ export function useKDSOrders(
     }));
 
     setKdsOrders((prev) => {
-      const updated = prev.map((o) =>
-        o.order.id === orderId
-          ? {
-              ...o,
-              order: { ...o.order, orderItems: newRawItems },
-              items: o.items.map((i) => ({ ...i, completed: true })),
-            }
-          : o,
-      );
+      const updated = alreadyCompleted
+        ? prev
+        : prev.map((o) =>
+            o.order.id === orderId
+              ? {
+                  ...o,
+                  order: { ...o.order, orderItems: newRawItems },
+                  items: o.items.map((i) => ({ ...i, completed: true })),
+                }
+              : o,
+          );
       const completed = updated.filter(isOrderCompleted);
       const overflow = completed.slice(
         0,
@@ -219,7 +219,7 @@ export function useKDSOrders(
       return updated.filter((o) => !removeIds.has(o.order.id ?? ""));
     });
 
-    if (!localOnly) {
+    if (!alreadyCompleted && !localOnly) {
       void updateOrderItems(orderId, newRawItems, collectionForOrder(orderEntry.order));
     }
   };

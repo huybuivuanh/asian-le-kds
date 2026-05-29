@@ -10,7 +10,7 @@ import {
   dineInItemSortTier,
   kitchenTypeSortRank,
 } from "@/utils/orderItemSections";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { OrderItemRow } from "./OrderItemRow";
 
@@ -37,8 +37,10 @@ export function OrderCard({
   const { order, items } = kdsOrder;
   const isCompleted = items.length > 0 && items.every((i) => i.completed);
 
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => { onCompleteRef.current = onComplete; });
   useEffect(() => {
-    if (isCompleted) onComplete();
+    if (isCompleted) onCompleteRef.current();
   }, [isCompleted]);
 
   return (
@@ -236,7 +238,7 @@ export function OrderCard({
         {!isCompleted && (
           <TouchableOpacity
             onPress={onComplete}
-            className="rounded-lg py-4 items-center bg-[#22c87a]"
+            className="rounded-lg py-4 items-center bg-brand"
             activeOpacity={0.8}
           >
             <Text className="text-xs font-semibold text-white">

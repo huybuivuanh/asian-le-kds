@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
+  type ConnectionStateHandler,
   type OrderChangeHandler,
   collectionForOrder,
   updateOrderItems,
@@ -21,6 +22,7 @@ export interface KDSOrder {
 }
 
 const MAX_COMPLETED = 3;
+const PRE_ORDER_LEAD_MS = 30 * 60 * 1000;
 
 const isOrderCompleted = (o: KDSOrder): boolean =>
   o.items.length > 0 && o.items.every((i) => i.completed);
@@ -42,12 +44,14 @@ function withDrinksCompleted(orderItems: OrderItem[]): OrderItem[] | null {
 }
 
 export function useKDSOrders(
-  subscribe: (onChange: OrderChangeHandler) => () => void,
+  subscribe: (onChange: OrderChangeHandler, onConnectionChange?: ConnectionStateHandler) => () => void,
   storageKey?: string,
   localOnly = false,
 ) {
   const [kdsOrders, setKdsOrders] = useState<KDSOrder[]>([]);
+  const [isConnected, setIsConnected] = useState(true);
   const completedIds = useRef<Set<string>>(new Set());
+  const hasReceivedLiveData = useRef(false);
 
   const saveIds = () => {
     if (!storageKey) return;
@@ -58,81 +62,87 @@ export function useKDSOrders(
     let unsubscribe: (() => void) | undefined;
 
     const startSubscription = () => {
-      unsubscribe = subscribe((order, type) => {
-        if (type === "added") {
-          const drinkUpdated = withDrinksCompleted(order.orderItems);
-          if (drinkUpdated && !localOnly) {
-            void updateOrderItems(order.id!, drinkUpdated, collectionForOrder(order));
+      unsubscribe = subscribe(
+        (order, type) => {
+          if (type === "added") {
+            const drinkUpdated = withDrinksCompleted(order.orderItems);
+            if (drinkUpdated && !localOnly) {
+              void updateOrderItems(order.id!, drinkUpdated, collectionForOrder(order));
+            }
+            const effectiveOrder = drinkUpdated
+              ? { ...order, orderItems: drinkUpdated }
+              : order;
+
+            setKdsOrders((prev) => {
+              if (prev.find((o) => o.order.id === order.id)) return prev;
+              const wasCompleted = completedIds.current.has(order.id!);
+              const items = buildDisplayItems(effectiveOrder);
+              return [
+                ...prev,
+                {
+                  order: effectiveOrder,
+                  items: wasCompleted
+                    ? items.map((i) => ({ ...i, completed: true }))
+                    : items,
+                },
+              ];
+            });
           }
-          const effectiveOrder = drinkUpdated
-            ? { ...order, orderItems: drinkUpdated }
-            : order;
 
-          setKdsOrders((prev) => {
-            if (prev.find((o) => o.order.id === order.id)) return prev;
-            const wasCompleted = completedIds.current.has(order.id!);
-            const items = buildDisplayItems(effectiveOrder);
-            return [
-              ...prev,
-              {
-                order: effectiveOrder,
-                items: wasCompleted
-                  ? items.map((i) => ({ ...i, completed: true }))
-                  : items,
-              },
-            ];
-          });
-        }
-
-        if (type === "modified") {
-          setKdsOrders((prev) =>
-            prev.map((o) => {
-              if (o.order.id !== order.id) return o;
-              const newItems = buildDisplayItems(order);
-              const wasLocallyCompleted = completedIds.current.has(order.id!);
-
-              if (!wasLocallyCompleted) {
-                return { ...o, order, items: newItems };
-              }
-
-              // Preserve per-item local completion; items added by POS default to false
-              const localCompletionByKey = new Map(
-                o.items.map((i) => [i.id ?? i.name, i.completed]),
-              );
-              const mergedItems = newItems.map((i) => ({
-                ...i,
-                completed: localCompletionByKey.get(i.id ?? i.name) ?? false,
-              }));
-
-              // New item arrived — un-complete the order so it re-enters the active queue
-              if (mergedItems.some((i) => !i.completed)) {
-                completedIds.current.delete(order.id!);
-                saveIds();
-              }
-
-              return { ...o, order, items: mergedItems };
-            }),
-          );
-        }
-
-        if (type === "removed") {
-          const id = order.id!;
-          completedIds.current.delete(id);
-          saveIds();
-
-          if (order.status === OrderStatus.Completed) {
+          if (type === "modified") {
             setKdsOrders((prev) =>
-              prev.map((o) =>
-                o.order.id === id && !isOrderCompleted(o)
-                  ? { ...o, items: o.items.map((i) => ({ ...i, completed: true })) }
-                  : o,
-              ),
+              prev.map((o) => {
+                if (o.order.id !== order.id) return o;
+                const newItems = buildDisplayItems(order);
+                const wasLocallyCompleted = completedIds.current.has(order.id!);
+
+                if (!wasLocallyCompleted) {
+                  return { ...o, order, items: newItems };
+                }
+
+                // Preserve per-item local completion; items added by POS default to false
+                const localCompletionByKey = new Map(
+                  o.items.map((i) => [i.id ?? i.name, i.completed]),
+                );
+                const mergedItems = newItems.map((i) => ({
+                  ...i,
+                  completed: localCompletionByKey.get(i.id ?? i.name) ?? false,
+                }));
+
+                // New item arrived — un-complete the order so it re-enters the active queue
+                if (mergedItems.some((i) => !i.completed)) {
+                  completedIds.current.delete(order.id!);
+                  saveIds();
+                }
+
+                return { ...o, order, items: mergedItems };
+              }),
             );
-          } else {
-            setKdsOrders((prev) => prev.filter((o) => o.order.id !== id));
           }
-        }
-      });
+
+          if (type === "removed") {
+            const id = order.id!;
+            completedIds.current.delete(id);
+            saveIds();
+
+            if (order.status === OrderStatus.Completed) {
+              setKdsOrders((prev) =>
+                prev.map((o) =>
+                  o.order.id === id && !isOrderCompleted(o)
+                    ? { ...o, items: o.items.map((i) => ({ ...i, completed: true })) }
+                    : o,
+                ),
+              );
+            } else {
+              setKdsOrders((prev) => prev.filter((o) => o.order.id !== id));
+            }
+          }
+        },
+        (connected: boolean) => {
+          if (connected) hasReceivedLiveData.current = true;
+          if (hasReceivedLiveData.current) setIsConnected(connected);
+        },
+      );
     };
 
     if (storageKey) {
@@ -143,7 +153,7 @@ export function useKDSOrders(
             completedIds.current = new Set(ids);
           }
         })
-        .catch(() => {})
+        .catch((e: unknown) => { console.error("AsyncStorage read error:", e); })
         .finally(() => { startSubscription(); });
     } else {
       startSubscription();
@@ -224,7 +234,6 @@ export function useKDSOrders(
     }
   };
 
-  const PRE_ORDER_LEAD_MS = 30 * 60 * 1000;
   const sortKey = (o: KDSOrder): number => {
     const { order } = o;
     if (order.orderType === OrderType.TakeOut && order.fulfillment.kind === "scheduled") {
@@ -236,5 +245,5 @@ export function useKDSOrders(
   const activeOrders = sorted.filter((o) => !isOrderCompleted(o));
   const completedOrders = sorted.filter(isOrderCompleted);
 
-  return { activeOrders, completedOrders, toggleItem, completeOrder };
+  return { activeOrders, completedOrders, toggleItem, completeOrder, isConnected };
 }

@@ -8,7 +8,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as Updates from "expo-updates";
 import { useKeepAwake } from "expo-keep-awake";
 import { useEffect, useRef } from "react";
-import { AppState, type AppStateStatus } from "react-native";
+import { ActivityIndicator, AppState, type AppStateStatus, View } from "react-native";
+import { BRAND } from "@/constants/colors";
 
 const RELOAD_AFTER_MS = 5 * 60 * 1000;
 
@@ -32,7 +33,13 @@ export default function RootLayout() {
   }, []);
   const segments = useSegments();
 
-  if (isLoading) return null;
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#0f1117", alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator color={BRAND} size="large" />
+      </View>
+    );
+  }
 
   const isAuthRoute = segments[0] === "login";
 

@@ -1,4 +1,4 @@
-import { KDSHeader, OrderCard, QueueDivider } from "@/components/kds";
+import { ConnectionBanner, KDSHeader, OrderCard, QueueDivider } from "@/components/kds";
 import { useKDSOrders } from "@/hooks/useKDSOrders";
 import { logout } from "@/services/firebase/auth";
 import { subscribeToActiveDineInOrders } from "@/services/firebase/orders";
@@ -6,7 +6,7 @@ import { ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function DineInScreen() {
-  const { activeOrders, completedOrders, toggleItem, completeOrder } =
+  const { activeOrders, completedOrders, toggleItem, completeOrder, isConnected } =
     useKDSOrders(subscribeToActiveDineInOrders);
 
   return (
@@ -20,6 +20,7 @@ export default function DineInScreen() {
           void logout();
         }}
       />
+      <ConnectionBanner visible={!isConnected} />
       <ScrollView
         horizontal
         className="flex-1"

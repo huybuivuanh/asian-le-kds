@@ -1,4 +1,3 @@
-import { firebase } from "@/services/firebase/config";
 import {
   AddExtra,
   ItemChange,
@@ -6,11 +5,7 @@ import {
   OrderItem,
   OrderItemOption,
 } from "@/types/types";
-import { collection, doc } from "firebase/firestore";
-
-export const generateFirestoreId = () => {
-  return doc(collection(firebase.db,"dummy")).id;
-};
+import { generateFirestoreId } from "@/utils/firestore";
 
 /**
  * Merge order lines that share the exact same “signature” (name, price, kitchen, flags,

@@ -88,15 +88,29 @@ export function useKDSOrders(
           setKdsOrders((prev) =>
             prev.map((o) => {
               if (o.order.id !== order.id) return o;
-              const items = buildDisplayItems(order);
+              const newItems = buildDisplayItems(order);
               const wasLocallyCompleted = completedIds.current.has(order.id!);
-              return {
-                ...o,
-                order,
-                items: wasLocallyCompleted
-                  ? items.map((i) => ({ ...i, completed: true }))
-                  : items,
-              };
+
+              if (!wasLocallyCompleted) {
+                return { ...o, order, items: newItems };
+              }
+
+              // Preserve per-item local completion; items added by POS default to false
+              const localCompletionByKey = new Map(
+                o.items.map((i) => [i.id ?? i.name, i.completed]),
+              );
+              const mergedItems = newItems.map((i) => ({
+                ...i,
+                completed: localCompletionByKey.get(i.id ?? i.name) ?? false,
+              }));
+
+              // New item arrived — un-complete the order so it re-enters the active queue
+              if (mergedItems.some((i) => !i.completed)) {
+                completedIds.current.delete(order.id!);
+                saveIds();
+              }
+
+              return { ...o, order, items: mergedItems };
             }),
           );
         }

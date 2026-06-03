@@ -38,7 +38,9 @@ export function OrderCard({
   const isCompleted = items.length > 0 && items.every((i) => i.completed);
 
   const onCompleteRef = useRef(onComplete);
-  useEffect(() => { onCompleteRef.current = onComplete; });
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  });
   useEffect(() => {
     if (isCompleted) onCompleteRef.current();
   }, [isCompleted]);
@@ -89,8 +91,7 @@ export function OrderCard({
           <>
             <View className="flex-row items-center justify-between mt-1">
               <Text className="text-slate-900 text-sm font-bold">
-                {(order as DineInOrder).guests}{" "}
-                {(order as DineInOrder).guests === 1 ? "Guest" : "Guests"}
+                Guests: {(order as DineInOrder).guests}{" "}
               </Text>
               <View className="flex-row items-center gap-2">
                 <Text className="text-slate-900 text-sm font-bold tabular-nums">
@@ -106,7 +107,7 @@ export function OrderCard({
                 className="text-slate-900 text-sm font-bold"
                 numberOfLines={1}
               >
-                Staff:{order.staff}
+                Staff: {order.staff}
               </Text>
             </View>
           </>

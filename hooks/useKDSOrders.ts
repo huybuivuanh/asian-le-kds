@@ -208,8 +208,8 @@ export function useKDSOrders(
       completed: true,
     }));
 
-    setKdsOrders((prev) => {
-      const updated = alreadyCompleted
+    setKdsOrders((prev) =>
+      alreadyCompleted
         ? prev
         : prev.map((o) =>
             o.order.id === orderId
@@ -219,15 +219,8 @@ export function useKDSOrders(
                   items: o.items.map((i) => ({ ...i, completed: true })),
                 }
               : o,
-          );
-      const completed = updated.filter(isOrderCompleted);
-      const overflow = completed.slice(
-        0,
-        Math.max(0, completed.length - MAX_COMPLETED),
-      );
-      const removeIds = new Set(overflow.map((o) => o.order.id));
-      return updated.filter((o) => !removeIds.has(o.order.id ?? ""));
-    });
+          ),
+    );
 
     if (!alreadyCompleted && !localOnly) {
       void updateOrderItems(orderId, newRawItems, collectionForOrder(orderEntry.order));
@@ -243,7 +236,7 @@ export function useKDSOrders(
   };
   const sorted = [...kdsOrders].sort((a, b) => sortKey(a) - sortKey(b));
   const activeOrders = sorted.filter((o) => !isOrderCompleted(o));
-  const completedOrders = sorted.filter(isOrderCompleted);
+  const completedOrders = sorted.filter(isOrderCompleted).slice(-MAX_COMPLETED);
 
   return { activeOrders, completedOrders, toggleItem, completeOrder, isConnected };
 }

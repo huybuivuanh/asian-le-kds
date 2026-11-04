@@ -24,7 +24,7 @@ export default function TabsLayout() {
             <Ionicons
               name={focused ? "restaurant" : "restaurant-outline"}
               size={size}
-              color={color}
+              color={color as string}
             />
           ),
         }}
@@ -37,7 +37,7 @@ export default function TabsLayout() {
             <Ionicons
               name={focused ? "receipt" : "receipt-outline"}
               size={size}
-              color={color}
+              color={color as string}
             />
           ),
         }}

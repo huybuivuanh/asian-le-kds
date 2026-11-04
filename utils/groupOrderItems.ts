@@ -111,6 +111,7 @@ function fullSignatureKey(item: OrderItem): string {
 function buildMergedLine(
   template: OrderItem,
   totalQuantity: number,
+  completed: boolean,
 ): OrderItem {
   const options =
     template.options && template.options.length > 0
@@ -135,6 +136,7 @@ function buildMergedLine(
     togo: template.togo,
     appetizer: template.appetizer,
     paid: template.paid,
+    completed,
     ...(options ? { options } : {}),
     ...(changes ? { changes } : {}),
     ...(extras ? { extras } : {}),
@@ -205,6 +207,8 @@ function buildMergedDrinkFlavorLine(bucket: OrderItem[]): OrderItem {
     togo: template.togo,
     appetizer: template.appetizer,
     paid: template.paid,
+    // Merged line is done only when every source line is done.
+    completed: bucket.every((item) => item.completed),
     options,
   };
 }
@@ -300,10 +304,12 @@ function applyDrinkFlavorGrouping(items: OrderItem[]): OrderItem[] {
 function mergeByExactSignature(items: OrderItem[]): OrderItem[] {
   const totalsByKey = new Map<string, number>();
   const templateByKey = new Map<string, OrderItem>();
+  const completedByKey = new Map<string, boolean>();
 
   for (const item of items) {
     const key = fullSignatureKey(item);
     totalsByKey.set(key, (totalsByKey.get(key) ?? 0) + item.quantity);
+    completedByKey.set(key, (completedByKey.get(key) ?? true) && item.completed);
     if (!templateByKey.has(key)) {
       templateByKey.set(key, item);
     }
@@ -319,7 +325,7 @@ function mergeByExactSignature(items: OrderItem[]): OrderItem[] {
 
     const template = templateByKey.get(key)!;
     const totalQty = totalsByKey.get(key)!;
-    out.push(buildMergedLine(template, totalQty));
+    out.push(buildMergedLine(template, totalQty, completedByKey.get(key)!));
   }
 
   return out;

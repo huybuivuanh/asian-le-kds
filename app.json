@@ -23,8 +23,7 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/Asian Le KDS.png"
+      "output": "static"
     },
     "plugins": [
       "expo-router",

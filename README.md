@@ -4,11 +4,9 @@ A real-time kitchen display system built with Expo and Firebase, designed for re
 
 ## Features
 
-- **Dine In tab** — tracks food delivery per table; completion state syncs to Firestore so servers see progress in real time
-- **Orders tab** — cooks see all active orders (dine-in + take-out); completion is local only
+- **Dine In display** — tracks food delivery per table; completion state syncs to Firestore so servers see progress in real time
 - Real-time Firestore subscriptions with automatic reconnection
 - No-connection overlay that blocks interaction and dismisses automatically when connection restores
-- Pre-order support with 30-minute lead scheduling
 - Auto-reload after 5 minutes in background (keeps the display fresh overnight)
 - Demo mode — separate Firestore database activated by logging in with a demo account; no rebuild needed
 
@@ -16,10 +14,9 @@ A real-time kitchen display system built with Expo and Firebase, designed for re
 
 | | |
 |---|---|
-| Framework | Expo ~54, expo-router ~6 |
-| UI | React Native 0.81, NativeWind v4, Tailwind CSS v3 |
+| Framework | Expo SDK 58, expo-router |
+| UI | React Native 0.88, NativeWind v4, Tailwind CSS v3 |
 | Backend | Firebase JS SDK v12, Firestore real-time listeners |
-| Persistence | AsyncStorage (Orders tab completion state) |
 | Language | TypeScript (strict) |
 
 ## Setup
@@ -47,14 +44,13 @@ Fill in the values from your Firebase project settings (Project Settings → You
 
 ### 3. Firestore collections
 
-The app reads from two collections:
+The app reads from one collection:
 
 | Collection | Documents |
 |---|---|
 | `dineInOrders` | `DineInOrder` — includes `tableNumber`, `guests`, `orderItems`, `status`, `createdAt` |
-| `takeOutOrders` | `TakeOutOrder` — includes `customerName?`, `phoneNumber?`, `fulfillment`, `orderItems`, `status`, `createdAt` |
 
-Both collections need a **composite index**: `status ASC, createdAt ASC`. Firebase will prompt you with a direct link to create it when you first run the app.
+The collection needs a **composite index**: `status ASC, createdAt ASC`. Firebase will prompt you with a direct link to create it when you first run the app.
 
 ### 4. Firebase Auth
 
@@ -85,11 +81,8 @@ When the demo account logs in, all Firestore reads and writes go to the `demo` d
 ```
 app/
   _layout.tsx              # Root layout — auth guard, keep-awake, 5-min reload
+  index.tsx                # Dine In screen
   login.tsx                # Login screen
-  (tabs)/
-    _layout.tsx            # Tab navigator
-    index.tsx              # Dine In screen
-    orders.tsx             # Orders screen
 components/kds/
   ConnectionBanner.tsx     # Full-screen no-connection modal
   KDSHeader.tsx            # Header bar (title, counts, sign out)
@@ -110,7 +103,6 @@ types/
   types.ts                 # Domain types
 utils/
   firestore.ts             # generateFirestoreId
-  helper.ts                # takeoutFulfillmentIsScheduled, formatPhone
   groupOrderItems.ts       # Order item merging and splitting logic
   preprocessOrderItems.ts  # Option abbreviation embedding
   orderItemSections.ts     # Sort tiers and kitchen type ranks
@@ -118,15 +110,9 @@ utils/
 
 ## How Completion Works
 
-### Dine In tab
 - Checking all items or pressing "Complete order" marks the order done
 - Completion state is written back to Firestore (`orderItems[].completed`)
 - Completed orders stay visible (dimmed) until Firestore removes them
-
-### Orders tab
-- Same UI, but all state is local only — nothing is written to Firestore
-- Completed order IDs are persisted in AsyncStorage under `kds_completed_orders`
-- State survives the 5-minute auto-reload
 
 ### New items added mid-order (POS)
 When POS adds an item to an already-completed order, the order automatically returns to the active queue with existing items checked and the new item unchecked.

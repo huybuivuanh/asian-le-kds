@@ -90,24 +90,3 @@ export interface DineInOrder extends Order {
   guests: number;
 }
 
-export type TakeOutFulfillment =
-  | {
-      kind: "immediate";
-      readyTimeMinutes?: number;
-    }
-  | {
-      kind: "scheduled";
-      scheduledAt: Timestamp;
-    };
-
-export interface TakeOutOrder extends Order {
-  orderType: OrderType.TakeOut;
-  customerName?: string;
-  phoneNumber?: string;
-  fulfillment: TakeOutFulfillment;
-}
-
-export enum TakeOutFulfillmentKind {
-  Immediate = "immediate",
-  Scheduled = "scheduled",
-}

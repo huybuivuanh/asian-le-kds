@@ -1,12 +1,5 @@
 import { KDSOrder } from "@/hooks/useKDSOrders";
 import {
-  DineInOrder,
-  OrderType,
-  TakeOutFulfillment,
-  TakeOutOrder,
-} from "@/types/types";
-import { formatPhone, takeoutFulfillmentIsScheduled } from "@/utils/helper";
-import {
   dineInItemSortTier,
   kitchenTypeSortRank,
 } from "@/utils/orderItemSections";
@@ -19,13 +12,6 @@ interface Props {
   onToggleItem: (index: number) => void;
   onComplete: () => void;
   disableItemToggle?: boolean;
-}
-
-function cardBgClass(order: DineInOrder | TakeOutOrder): string {
-  if (order.orderType === OrderType.DineIn) return "bg-white";
-  if (takeoutFulfillmentIsScheduled(order as TakeOutOrder))
-    return "bg-orange-100 border-orange-200";
-  return "bg-blue-100 border-blue-200";
 }
 
 export function OrderCard({
@@ -47,110 +33,35 @@ export function OrderCard({
 
   return (
     <View
-      className={`w-[300px] mx-1.5 my-2 rounded-xl border border-white/10 overflow-hidden flex-col ${cardBgClass(order)} ${isCompleted ? "opacity-60" : ""}`}
+      className={`w-[300px] mx-1.5 my-2 rounded-xl border border-white/10 overflow-hidden flex-col bg-white ${isCompleted ? "opacity-60" : ""}`}
       style={{ flexShrink: 0, alignSelf: "stretch" }}
     >
       {/* Card header */}
       <View className="px-3 pt-3 pb-2">
-        {/* Centered order type label */}
+        {/* Centered table label */}
         <View className="items-center mb-2">
-          {order.orderType === OrderType.DineIn ? (
-            <Text className="text-slate-900 font-bold text-3xl">
-              Table {(order as DineInOrder).tableNumber}
-            </Text>
-          ) : takeoutFulfillmentIsScheduled(order as TakeOutOrder) ? (
-            <>
-              <Text className="text-orange-600 font-bold text-3xl tracking-wide">
-                Pre-Order
-              </Text>
-              <Text className="text-orange-700 text-sm font-semibold mt-0.5">
-                {(
-                  (order as TakeOutOrder).fulfillment as Extract<
-                    TakeOutFulfillment,
-                    { kind: "scheduled" }
-                  >
-                ).scheduledAt
-                  .toDate()
-                  .toLocaleString([], {
-                    month: "short",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-              </Text>
-            </>
-          ) : (
-            <Text className="text-blue-600 font-bold text-3xl tracking-wide">
-              Take Out
-            </Text>
-          )}
+          <Text className="text-slate-900 font-bold text-3xl">
+            Table {order.tableNumber}
+          </Text>
         </View>
 
         {/* Detail rows */}
-        {order.orderType === OrderType.DineIn ? (
-          <>
-            <View className="flex-row items-center justify-between mt-1">
-              <Text className="text-slate-900 text-sm font-bold">
-                Guests: {(order as DineInOrder).guests}{" "}
-              </Text>
-              <View className="flex-row items-center gap-2">
-                <Text className="text-slate-900 text-sm font-bold tabular-nums">
-                  {order.createdAt.toDate().toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </Text>
-              </View>
-            </View>
-            <View className="flex-row items-center justify-between mt-1">
-              <Text
-                className="text-slate-900 text-sm font-bold"
-                numberOfLines={1}
-              >
-                Staff: {order.staff}
-              </Text>
-            </View>
-          </>
-        ) : (
-          <>
-            <View className="flex-row items-center justify-between">
-              {(order as TakeOutOrder).customerName ? (
-                <Text
-                  className="text-slate-900 text-sm font-bold"
-                  numberOfLines={1}
-                >
-                  {(order as TakeOutOrder).customerName}
-                </Text>
-              ) : (
-                <View />
-              )}
-              {(order as TakeOutOrder).phoneNumber ? (
-                <Text className="text-slate-900 text-sm font-bold tabular-nums">
-                  {order.phoneNumber ? formatPhone(order.phoneNumber) : ""}
-                </Text>
-              ) : null}
-            </View>
-            <View className="flex-row items-center justify-between mt-1">
-              <Text
-                className="text-slate-900 text-sm font-bold"
-                numberOfLines={1}
-              >
-                Staff: {order.staff}
-              </Text>
-              <View className="flex-row items-center gap-2">
-                {isCompleted && (
-                  <Text className="text-slate-900 text-sm font-bold">Done</Text>
-                )}
-                <Text className="text-slate-900 text-sm font-bold tabular-nums">
-                  {order.createdAt.toDate().toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </Text>
-              </View>
-            </View>
-          </>
-        )}
+        <View className="flex-row items-center justify-between mt-1">
+          <Text className="text-slate-900 text-sm font-bold">
+            Guests: {order.guests}
+          </Text>
+          <Text className="text-slate-900 text-sm font-bold tabular-nums">
+            {order.createdAt.toDate().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </Text>
+        </View>
+        <View className="flex-row items-center justify-between mt-1">
+          <Text className="text-slate-900 text-sm font-bold" numberOfLines={1}>
+            Staff: {order.staff}
+          </Text>
+        </View>
       </View>
 
       <View className="h-px bg-slate-500 mx-3" />

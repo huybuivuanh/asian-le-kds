@@ -100,7 +100,8 @@ services/firebase/
   auth.ts                  # Auth helpers + db activation on login
   orders.ts                # Firestore subscription functions
 types/
-  types.ts                 # Domain types
+  global.d.ts              # Global domain interfaces
+  enums.ts                 # Runtime enums
 utils/
   firestore.ts             # generateFirestoreId
   groupOrderItems.ts       # Order item merging and splitting logic

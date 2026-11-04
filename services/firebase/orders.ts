@@ -1,4 +1,4 @@
-import { DineInOrder, OrderItem, OrderStatus } from "@/types/types";
+import { OrderStatus } from "@/types/enums";
 import {
   collection,
   doc,

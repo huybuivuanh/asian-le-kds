@@ -3,7 +3,7 @@ import {
   type OrderChangeHandler,
   updateOrderItems,
 } from "@/services/firebase/orders";
-import { DineInOrder, KitchenType, OrderItem, OrderStatus } from "@/types/types";
+import { KitchenType, OrderStatus } from "@/types/enums";
 import { preprocessOrderItems } from "@/utils/preprocessOrderItems";
 import { useEffect, useRef, useState } from "react";
 

@@ -1,7 +1,7 @@
 import { KDSOrder } from "@/hooks/useKDSOrders";
 import {
+  compareByKitchenTypeThenName,
   dineInItemSortTier,
-  kitchenTypeSortRank,
 } from "@/utils/orderItemSections";
 import { useEffect, useRef } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
@@ -85,10 +85,7 @@ export function OrderCard({
               const ta = dineInItemSortTier(a.item);
               const tb = dineInItemSortTier(b.item);
               if (ta !== tb) return ta - tb;
-              const ra = kitchenTypeSortRank(a.item.kitchenType);
-              const rb = kitchenTypeSortRank(b.item.kitchenType);
-              if (ra !== rb) return ra - rb;
-              return a.index - b.index;
+              return compareByKitchenTypeThenName(a.item, b.item);
             });
 
           const byTier = new Map<

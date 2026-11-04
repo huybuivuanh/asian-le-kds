@@ -1,10 +1,4 @@
-import {
-  AddExtra,
-  ItemChange,
-  KitchenType,
-  OrderItem,
-  OrderItemOption,
-} from "@/types/types";
+import { KitchenType } from "@/types/enums";
 import { generateFirestoreId } from "@/utils/firestore";
 
 /**

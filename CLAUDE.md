@@ -50,7 +50,8 @@ services/firebase/
   auth.ts                  # login / logout; switches db on auth state change
   orders.ts                # subscribeToActiveDineInOrders, updateOrderItems
 types/
-  types.ts                 # shared domain types (OrderItem, DineInOrder, KitchenType, …)
+  global.d.ts              # global domain interfaces (OrderItem, DineInOrder, …) — no import needed, same pattern as POS
+  enums.ts                 # runtime enums (KitchenType, OrderStatus, OrderType, DiscountType) — import from `@/types/enums`
 utils/
   firestore.ts             # generateFirestoreId — generates a local Firestore document ID without a network call
   groupOrderItems.ts       # groupOrderItemsBySignature — merges duplicate lines, sums qty
@@ -109,7 +110,9 @@ Demo db:       "demo"      — safe sandbox, seeded with sample orders
 
 > **Note**: `where("status") + orderBy("createdAt")` requires a composite Firestore index on `dineInOrders`.
 
-### Order types (`types/types.ts`)
+### Order types (`types/global.d.ts` + `types/enums.ts`)
+
+- Interfaces are declared in `declare global` and used without imports. Enums live in `enums.ts` (they are runtime values, so they can't go in a `.d.ts`).
 
 - `DineInOrder` — extends `Order` with `tableNumber: string`, `guests: number`.
 
@@ -117,7 +120,7 @@ Demo db:       "demo"      — safe sandbox, seeded with sample orders
 
 White card. Header: centered `Table {N}` → guests + time row → staff row.
 
-Items sorted into three tiers (Appetizers → For Table → To Go), then by kitchen type within each tier. Tier badges: amber (Appetizers), slate (For Table), teal (To Go) — all with white text.
+Items sorted into three tiers (Appetizers → For Table → To Go), then by kitchen type (Deep Fry → Both → Stir Fry → Other), then item name A→Z within each tier — same as POS (`compareByKitchenTypeThenName`). Tier badges: amber (Appetizers), slate (For Table), teal (To Go) — all with white text.
 
 Footer: "Complete order" button (hidden on completed orders). No progress bar.
 

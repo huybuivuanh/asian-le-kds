@@ -4,7 +4,7 @@
  * Use with `groupOrderItemsByDisplaySection` for UI; print server can import the same helpers.
  */
 
-import { KitchenType, OrderItem } from "@/types/types";
+import { KitchenType } from "@/types/enums";
 import { preprocessOrderItems } from "./preprocessOrderItems";
 
 export type OrderItemDisplayTier = 0 | 1 | 2;
@@ -28,7 +28,7 @@ export function sortOrderItemsForDisplay(items: OrderItem[]): OrderItem[] {
     const ta = dineInItemSortTier(a.item);
     const tb = dineInItemSortTier(b.item);
     if (ta !== tb) return ta - tb;
-    return a.index - b.index;
+    return compareByKitchenTypeThenName(a.item, b.item);
   });
   return indexed.map(({ item }) => item);
 }
@@ -52,6 +52,14 @@ export function kitchenTypeSortRank(kitchenType: KitchenType): number {
     default:
       return 99;
   }
+}
+
+/** Within a tier: kitchen station first, then item name A→Z (matches POS). */
+export function compareByKitchenTypeThenName(a: OrderItem, b: OrderItem): number {
+  const ra = kitchenTypeSortRank(a.kitchenType);
+  const rb = kitchenTypeSortRank(b.kitchenType);
+  if (ra !== rb) return ra - rb;
+  return a.name.localeCompare(b.name);
 }
 
 /** Stable sort by {@link kitchenTypeSortRank}, then original index within the same type. */
@@ -108,10 +116,7 @@ export function groupOrderItemsByDisplaySection(
     if (tierItems.length === 0) continue;
 
     tierItems.sort((a, b) => {
-      const ra = kitchenTypeSortRank(a.item.kitchenType);
-      const rb = kitchenTypeSortRank(b.item.kitchenType);
-      if (ra !== rb) return ra - rb;
-      return a.index - b.index;
+      return compareByKitchenTypeThenName(a.item, b.item);
     });
 
     sections.push({

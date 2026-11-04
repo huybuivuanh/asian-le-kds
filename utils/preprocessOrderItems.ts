@@ -1,4 +1,3 @@
-import { OrderItem } from "@/types/types";
 
 const OPTION_NAMES = {
   EGG_ROLL: "Egg Roll",

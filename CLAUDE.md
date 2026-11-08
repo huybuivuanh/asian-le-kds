@@ -39,15 +39,14 @@ components/kds/
   OrderCard.tsx            # single order card (header, item list, complete button)
   OrderItemRow.tsx         # individual item row with checkbox toggle
   QueueDivider.tsx         # thin vertical separator between active and completed sections
-config/
-  demo.ts                  # DEMO_EMAIL constant for demo mode db switching
 constants/
   colors.ts                # BRAND color constant (#22c87a) for use in JS style objects
 hooks/
   useKDSOrders.ts          # all KDS state — Firestore subscription, toggle, complete, connection state
 services/firebase/
-  config.ts                # Firebase app + Firestore db init; firebase wrapper + activateDemoDb/activateProductionDb
-  auth.ts                  # login / logout; switches db on auth state change
+  config.ts                # Firebase app + Firestore db init (shared asianlepos project)
+  business.ts              # current business from the businessId claim; bizCol/bizDoc path helpers
+  auth.ts                  # login / logout; only staff/admin claims get in
   orders.ts                # subscribeToActiveDineInOrders, updateOrderItems
 types/
   global.d.ts              # global domain interfaces (OrderItem, DineInOrder, …) — no import needed, same pattern as POS
@@ -89,24 +88,15 @@ useKDSOrders(
 - `useKDSOrders` tracks `hasReceivedLiveData` (ref) — the `isConnected` state only updates after the first live sync, preventing a false "disconnected" flash on startup.
 - The `ConnectionBanner` component renders as a `Modal` overlay: dims the screen, shows a white card with a red WiFi icon, blocks all interaction until connection restores.
 
-### Demo mode (`config/demo.ts` + `services/firebase/config.ts`)
+### Demo mode
 
-The app supports a separate Firestore database for app-store demo review, activated automatically when the demo account logs in — no rebuild needed.
-
-```
-Production db: (default)   — real restaurant data
-Demo db:       "demo"      — safe sandbox, seeded with sample orders
-```
-
-- `services/firebase/config.ts` exports a mutable `firebase` object (`{ db }`) instead of a plain `db` value. All Firestore calls read `firebase.db`.
-- `activateDemoDb()` / `activateProductionDb()` swap `firebase.db` synchronously — takes effect on the next Firestore call.
-- `services/firebase/auth.ts` calls the appropriate activator inside `onAuthStateChanged` before setting React state, so the correct db is always active before any subscription starts.
-- Demo email is set in `config/demo.ts` as `DEMO_EMAIL`.
+App Store review uses the **Demo business**: a review account whose `businessId` claim points
+at it (created by `asian-le-firebase/scripts/seed-demo.mjs`). No separate database, no rebuild.
 
 ### Firestore listeners (`services/firebase/orders.ts`)
 
-- `subscribeToActiveDineInOrders` — listens to `dineInOrders` where `status == "InProgress"`, ordered by `createdAt asc`.
-- `updateOrderItems(orderId, items)` — writes item completion state back to `dineInOrders`.
+- `subscribeToActiveDineInOrders` — listens to `businesses/{id}/dineInOrders` where `status == "InProgress"`, ordered by `createdAt asc`.
+- `updateOrderItems(orderId, items)` — writes item completion state back to `businesses/{id}/dineInOrders`.
 
 > **Note**: `where("status") + orderBy("createdAt")` requires a composite Firestore index on `dineInOrders`.
 
@@ -142,3 +132,11 @@ When an order is added or modified, items go through:
 - **Exception**: dynamic/runtime values must use the inline `style` prop — NativeWind cannot interpolate runtime values in class strings.
 - Brand color `#22c87a` — use `bg-brand` / `text-brand` in classNames; use `BRAND` from `constants/colors.ts` in JS style objects (e.g. `ActivityIndicator color`).
 - The horizontal queue `ScrollView` uses `horizontal`; each card uses `flexShrink: 0`. Item lists inside cards use a nested `ScrollView` with `nestedScrollEnabled`.
+
+## Shared Firebase project
+
+The KDS uses the shared `asianlepos` project with the POS, Orders app, website and rewards.
+All data is under `businesses/{businessId}/…` — build paths with `bizCol` / `bizDoc` from
+`services/firebase/business.ts`. Only accounts with custom claims
+`{ businessId, role: "staff" | "admin" }` can sign in; the business comes from that claim.
+Rules and the `set-claims` script live in `D:\Projects\asian-le-firebase`.

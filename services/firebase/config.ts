@@ -40,16 +40,8 @@ const firestoreSettings = {
   }),
 };
 
-const productionDb = initializeFirestore(app, firestoreSettings);
-const demoDb = initializeFirestore(app, firestoreSettings, "demo");
-
-export const firebase = { db: productionDb };
-
-export function activateDemoDb() {
-  firebase.db = demoDb;
-}
-export function activateProductionDb() {
-  firebase.db = productionDb;
-}
+// One database for every business; KDS data is under businesses/{id} (see business.ts).
+// The App Store review Demo is just another business.
+export const firebase = { db: initializeFirestore(app, firestoreSettings) };
 
 export { auth };

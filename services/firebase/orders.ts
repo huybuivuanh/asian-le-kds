@@ -1,7 +1,5 @@
 import { OrderStatus } from "@/types/enums";
 import {
-  collection,
-  doc,
   onSnapshot,
   orderBy,
   query,
@@ -9,7 +7,7 @@ import {
   where,
   type DocumentChangeType,
 } from "firebase/firestore";
-import { firebase } from "./config";
+import { bizCol, bizDoc } from "./business";
 
 export type OrderChangeHandler = (
   order: DineInOrder,
@@ -23,7 +21,7 @@ export function subscribeToActiveDineInOrders(
   onConnectionChange?: ConnectionStateHandler,
 ): () => void {
   const q = query(
-    collection(firebase.db, "dineInOrders"),
+    bizCol("dineInOrders"),
     where("status", "==", OrderStatus.InProgress),
     orderBy("createdAt", "asc"),
   );
@@ -49,5 +47,5 @@ export async function updateOrderItems(
   orderId: string,
   orderItems: OrderItem[],
 ): Promise<void> {
-  await updateDoc(doc(firebase.db, "dineInOrders", orderId), { orderItems });
+  await updateDoc(bizDoc("dineInOrders", orderId), { orderItems });
 }

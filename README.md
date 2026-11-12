@@ -8,7 +8,8 @@ A real-time kitchen display system built with Expo and Firebase, designed for re
 - Real-time Firestore subscriptions with automatic reconnection
 - No-connection overlay that blocks interaction and dismisses automatically when connection restores
 - Auto-reload after 5 minutes in background (keeps the display fresh overnight)
-- Demo mode — separate Firestore database activated by logging in with a demo account; no rebuild needed
+- Staff/admin only — sign-in checks the account's custom claims; anyone else is signed back out with a message
+- Demo mode — the App Store review account works in the separate **Demo business**; no rebuild needed
 
 ## Stack
 
@@ -40,21 +41,27 @@ EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 EXPO_PUBLIC_FIREBASE_APP_ID=
 ```
 
-Fill in the values from your Firebase project settings (Project Settings → Your apps → SDK setup).
+Fill in the values from the shared **`asianlepos`** Firebase project (Project Settings → Your apps → SDK setup).
 
-### 3. Firestore collections
+### 3. Firestore data
 
-The app reads from one collection:
+All data lives under `businesses/{businessId}/…` in the shared project. The business comes
+from the signed-in account's `businessId` claim (saved on the device so the KDS can restart
+offline for the same account). Paths are built with `bizCol` / `bizDoc` in
+`services/firebase/business.ts`.
 
-| Collection | Documents |
+| Collection (in the business) | Documents |
 |---|---|
 | `dineInOrders` | `DineInOrder` — includes `tableNumber`, `guests`, `orderItems`, `status`, `createdAt` |
 
-The collection needs a **composite index**: `status ASC, createdAt ASC`. Firebase will prompt you with a direct link to create it when you first run the app.
+The KDS listens to orders with `status == "InProgress"`, ordered by `createdAt`. The index and
+the security rules are deployed from the `asian-le-firebase` repo, not from here.
 
 ### 4. Firebase Auth
 
-Create at least one email/password user in Firebase Authentication for staff login.
+Staff sign in with email/password. An account can use the KDS only if it has custom claims
+`{ businessId, role: "staff" | "admin" }`. Set them with `scripts/set-claims.mjs` in
+`asian-le-firebase` (or create the user in pos-admin).
 
 ### 5. Run the app
 
@@ -66,15 +73,10 @@ npx expo start --ios
 
 ## Demo Mode
 
-The app supports a separate `demo` Firestore database for app-store review or client demos. No rebuild is required — the database is selected automatically at login.
-
-**Setup:**
-
-1. In Firebase Console → Firestore → Databases, create a new database with ID `demo` (same region as production). Seed it with sample orders.
-2. Create a Firebase Auth user with the demo email (see `config/demo.ts`).
-3. Update `DEMO_EMAIL` in `config/demo.ts` if needed.
-
-When the demo account logs in, all Firestore reads and writes go to the `demo` database. Logging out and back in as a real account switches back to production instantly.
+App Store review uses the **Demo business** in the same project. The review account
+(`review@asianle.ca`) has a `businessId` claim pointing at Demo, so everything it sees and
+writes stays in Demo. There's no separate database and no rebuild. The Demo business and the
+review accounts are created by `scripts/seed-demo.mjs` in `asian-le-firebase`.
 
 ## Project Structure
 
@@ -89,15 +91,14 @@ components/kds/
   OrderCard.tsx            # Order card (header, items, complete button)
   OrderItemRow.tsx         # Individual item row with checkbox
   QueueDivider.tsx         # Separator between active and completed cards
-config/
-  demo.ts                  # Demo account email
 constants/
   colors.ts                # Brand color constant
 hooks/
   useKDSOrders.ts          # Core KDS state hook
 services/firebase/
-  config.ts                # Firebase init + demo db switching
-  auth.ts                  # Auth helpers + db activation on login
+  config.ts                # Firebase init
+  business.ts              # Current business from the businessId claim; bizCol / bizDoc
+  auth.ts                  # Login / logout; only staff/admin claims get in
   orders.ts                # Firestore subscription functions
 types/
   global.d.ts              # Global domain interfaces
